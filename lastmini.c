@@ -68,15 +68,15 @@ int limesdr_init( const double sample_rate,
 }/////////////////////////////////////////////////////////////////////
 int main(int argc, char** argv){
   if ( argc < 2 ) {
-		printf("--usage: %s <OPTIONS>\n", argv[0]);
-		printf("  -f <FREQUENCY>\n"
-		       "  -b <BANDWIDTH_CALIBRATING> (default: 8e6)\n"
-		       "  -s <SAMPLE_RATE> (default: 5e6)\n"
-		       "  -g <GAIN_dB> range [0, 73] (default: 0)\n"
+    printf("--usage: %s <OPTIONS>\n", argv[0]);
+    printf("  -f <FREQUENCY>\n"
+           "  -b <BANDWIDTH_CALIBRATING> (default: 8e6)\n"
+           "  -s <SAMPLE_RATE> (default: 5e6)\n"
+           "  -g <GAIN_dB> range [0, 73] (default: 0)\n"
            "  -l <BUFFER_SIZE>  (default: 1000*1000)\n"
-		       "  -a <ANTENNA> (LNAL | LNAH | LNAW) (default: LNAW)\n"
-		       "  -o <OUTPUT_FILENAME CH A>\n"
-		       "  -p <OUTPUT_FILENAME CH B>\n"		       
+           "  -a <ANTENNA> (LNAL | LNAH | LNAW) (default: LNAW)\n"
+           "  -o <OUTPUT_FILENAME CH A>\n"
+           "  -p <OUTPUT_FILENAME CH B>\n"		       
            "  -n NUMBER of sampes\n");
 		return 1;
 	}	
@@ -96,7 +96,7 @@ int main(int argc, char** argv){
   int nb_samples2=0;
   lms_stream_meta_t meta;
   lms_device_t* device1 = NULL;
- 	for ( int i = 1; i < argc-1; i += 2 ) {
+  for ( int i = 1; i < argc-1; i += 2 ) {
     if      (strcmp(argv[i], "-f") == 0) { freq = atof( argv[i+1] ); }
     else if (strcmp(argv[i], "-b") == 0) { bandwidth_calibrating = atof( argv[i+1] ); }
     else if (strcmp(argv[i], "-s") == 0) { sample_rate = atof( argv[i+1] ); }
@@ -106,7 +106,7 @@ int main(int argc, char** argv){
     else if (strcmp(argv[i], "-o") == 0) { output_filename1 = argv[i+1]; }
     else if (strcmp(argv[i], "-p") == 0) { output_filename2 = argv[i+1]; }
     else if (strcmp(argv[i], "-n") == 0) { maxnumber = atof( argv[i+1] ); }
-	}    
+  }    
   struct s16iq_sample_s {  //definition bbufers
     short i;
     short q;
