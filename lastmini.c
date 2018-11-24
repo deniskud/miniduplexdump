@@ -79,7 +79,7 @@ int main(int argc, char** argv){
            "  -p <OUTPUT_FILENAME CH B>\n"		       
            "  -n NUMBER of sampes\n");
 		return 1;
-	}	
+  }	
   unsigned int freq = 2000000000;
   long long int maxnumber = 0;
   double bandwidth_calibrating = 8e6;
@@ -90,8 +90,8 @@ int main(int argc, char** argv){
   unsigned int device_i = 0;
   unsigned int channel = 0; // anything  
   char* antenna = "LNAW";
-	char* output_filename1 = "line-a.iq";  
-	char* output_filename2 = "line-b.iq";  
+  char* output_filename1 = "line-a.iq";  
+  char* output_filename2 = "line-b.iq";  
   int nb_samples=0;
   int nb_samples2=0;
   lms_stream_meta_t meta;
