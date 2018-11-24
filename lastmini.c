@@ -78,7 +78,7 @@ int main(int argc, char** argv){
            "  -o <OUTPUT_FILENAME CH A>\n"
            "  -p <OUTPUT_FILENAME CH B>\n"		       
            "  -n NUMBER of sampes\n");
-		return 1;
+    return 1;
   }	
   unsigned int freq = 2000000000;
   long long int maxnumber = 0;
@@ -151,7 +151,7 @@ int main(int argc, char** argv){
   LMS_DestroyStream(device1, &rx_stream2);
   free( buff1 );
   free( buff2 );
-  printf("Files :\n %s\n %s\nis wited and closed.\n",output_filename1,output_filename2);
+  printf("Files :\n %s\n %s\nwas writed and closed.\n",output_filename1,output_filename2);
   LMS_Close(device1);
   fclose( fd1 );
   fclose( fd2 );
