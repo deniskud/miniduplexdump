@@ -120,9 +120,7 @@ int main(int argc, char** argv){
   struct s16iq_sample_s *buff1 = (struct s16iq_sample_s*)malloc(sizeof(struct s16iq_sample_s) * buffer_size);
   struct s16iq_sample_s *buff2 = (struct s16iq_sample_s*)malloc(sizeof(struct s16iq_sample_s) * buffer_size);  
   struct s16iq_sample_s *mixbuf = (struct s16iq_sample_s*)malloc(sizeof(struct s16iq_sample_s) * buffer_size * 2);  
-
   printf("\nfreq=%d\nsamplerate=%f\ngain=%f\nbufer size=%d\nalg=%d\n",freq,sample_rate,gain,buffer_size,alg);
-  
   limesdr_init( sample_rate,freq,bandwidth_calibrating,gain,device_i,0,antenna,LMS_CH_RX,&device1,&host_sample_rate);
   lms_stream_t rx_stream = {
     .channel = 0,
@@ -142,11 +140,9 @@ int main(int argc, char** argv){
   LMS_SetupStream(device1, &rx_stream2);
   LMS_StartStream(&rx_stream);
   LMS_StartStream(&rx_stream2);
- 
   FILE* fd1;
   FILE* fd2;
   FILE* fd = stderr;
-
   if (alg==0) {
     fd1 = fopen( output_filename1, "w+b" );
     fd2 = fopen( output_filename2, "w+b" );
@@ -157,13 +153,11 @@ int main(int argc, char** argv){
     if (alg==0){
       nb_samples = LMS_RecvStream( &rx_stream, buff1, buffer_size, &meta, 100 );
       nb_samples2 = LMS_RecvStream( &rx_stream2, buff2, buffer_size, &meta, 100 );
-      printf("nb_samples=%d\nnb_samples2=%d\nsizeof( *buff1 )=%ld\nbuffer_size=%d\n",nb_samples,nb_samples2,sizeof( *mixbuf ),buffer_size);
       fwrite( buff1, sizeof( *buff1 ), nb_samples, fd1 );
       fwrite( buff2, sizeof( *buff2 ), nb_samples2, fd2 );
       fflush( fd2 );
       fflush( fd1 );
-    }
-    
+    }   
     if (alg==1){
       nb_samples = LMS_RecvStream( &rx_stream, buff1, buffer_size, &meta, 100 );
       nb_samples2 = LMS_RecvStream( &rx_stream2, buff2, buffer_size, &meta, 100 );    
@@ -174,7 +168,6 @@ int main(int argc, char** argv){
       fwrite( mixbuf, sizeof( *mixbuf ), nb_samples+nb_samples2, fd );
       fflush(fd);
     }
-    
   }/////////////////// end main loop
   LMS_StopStream(&rx_stream);
   LMS_StopStream(&rx_stream2);
