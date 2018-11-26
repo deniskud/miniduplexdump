@@ -5,6 +5,7 @@
 #include <math.h>
 #include <string.h>
 #include <lime/LimeSuite.h>
+
 int limesdr_set_channel( const unsigned int freq,
   const double bandwidth_calibrating,
   const double gain,
@@ -42,6 +43,7 @@ int limesdr_set_channel( const unsigned int freq,
   LMS_SetGaindB( device, is_tx, 1-channel, gain );
   return 0;
 }///// special init function
+
 int limesdr_init( const double sample_rate,
        const unsigned int freq,
        const double bandwidth_calibrating,
@@ -66,6 +68,7 @@ int limesdr_init( const double sample_rate,
   limesdr_set_channel( freq, bandwidth_calibrating, gain, channel, antenna, is_tx, *device );  
   return 0;
 }/////////////////////////////////////////////////////////////////////
+
 int main(int argc, char** argv){
   if ( argc < 2 ) {
     printf("--usage: %s <OPTIONS>\n", argv[0]);
@@ -77,7 +80,8 @@ int main(int argc, char** argv){
            "  -a <ANTENNA> (LNAL | LNAH | LNAW) (default: LNAW)\n"
            "  -o <OUTPUT_FILENAME CH A>\n"
            "  -p <OUTPUT_FILENAME CH B>\n"		       
-           "  -n NUMBER of sampes\n");
+           "  -n NUMBER of sampes\n"
+           "  -m for m=1: mix@ stderr(I1,Q1,I2,Q2,I1,Q1,I2,Q2...)");   
     return 1;
   }	
   unsigned int freq = 2000000000;
@@ -96,6 +100,7 @@ int main(int argc, char** argv){
   int nb_samples2=0;
   lms_stream_meta_t meta;
   lms_device_t* device1 = NULL;
+  int alg=0;
   for ( int i = 1; i < argc-1; i += 2 ) {
     if      (strcmp(argv[i], "-f") == 0) { freq = atof( argv[i+1] ); }
     else if (strcmp(argv[i], "-b") == 0) { bandwidth_calibrating = atof( argv[i+1] ); }
@@ -106,6 +111,7 @@ int main(int argc, char** argv){
     else if (strcmp(argv[i], "-o") == 0) { output_filename1 = argv[i+1]; }
     else if (strcmp(argv[i], "-p") == 0) { output_filename2 = argv[i+1]; }
     else if (strcmp(argv[i], "-n") == 0) { maxnumber = atof( argv[i+1] ); }
+    else if (strcmp(argv[i], "-m") == 0) { alg = atof( argv[i+1] ); }  
   }    
   struct s16iq_sample_s {  //definition bbufers
     short i;
@@ -113,6 +119,10 @@ int main(int argc, char** argv){
   } __attribute__((packed));
   struct s16iq_sample_s *buff1 = (struct s16iq_sample_s*)malloc(sizeof(struct s16iq_sample_s) * buffer_size);
   struct s16iq_sample_s *buff2 = (struct s16iq_sample_s*)malloc(sizeof(struct s16iq_sample_s) * buffer_size);  
+  struct s16iq_sample_s *mixbuf = (struct s16iq_sample_s*)malloc(sizeof(struct s16iq_sample_s) * buffer_size * 2);  
+
+  printf("\nfreq=%d\nsamplerate=%f\ngain=%f\nbufer size=%d\nalg=%d\n",freq,sample_rate,gain,buffer_size,alg);
+  
   limesdr_init( sample_rate,freq,bandwidth_calibrating,gain,device_i,0,antenna,LMS_CH_RX,&device1,&host_sample_rate);
   lms_stream_t rx_stream = {
     .channel = 0,
@@ -132,18 +142,39 @@ int main(int argc, char** argv){
   LMS_SetupStream(device1, &rx_stream2);
   LMS_StartStream(&rx_stream);
   LMS_StartStream(&rx_stream2);
+ 
   FILE* fd1;
   FILE* fd2;
-  fd1 = fopen( output_filename1, "w+b" );
-  fd2 = fopen( output_filename2, "w+b" );
-  if ( fd1 == NULL || fd2 == NULL ) perror("fopen()");
+  FILE* fd = stderr;
+
+  if (alg==0) {
+    fd1 = fopen( output_filename1, "w+b" );
+    fd2 = fopen( output_filename2, "w+b" );
+    if ( fd1 == NULL || fd2 == NULL ) perror("fopen()");
+  }
+  int pointer = 0;
   while (maxnumber--!=0){ /////////////////// start main loop                 
-    nb_samples = LMS_RecvStream( &rx_stream, buff1, buffer_size, &meta, 100 );
-    nb_samples2 = LMS_RecvStream( &rx_stream2, buff2, buffer_size, &meta, 100 );
-    fwrite( buff1, sizeof( *buff1 ), nb_samples, fd1 );
-    fwrite( buff2, sizeof( *buff2 ), nb_samples2, fd2 );
-    fflush( fd2 );
-    fflush( fd1 );
+    if (alg==0){
+      nb_samples = LMS_RecvStream( &rx_stream, buff1, buffer_size, &meta, 100 );
+      nb_samples2 = LMS_RecvStream( &rx_stream2, buff2, buffer_size, &meta, 100 );
+      printf("nb_samples=%d\nnb_samples2=%d\nsizeof( *buff1 )=%ld\nbuffer_size=%d\n",nb_samples,nb_samples2,sizeof( *mixbuf ),buffer_size);
+      fwrite( buff1, sizeof( *buff1 ), nb_samples, fd1 );
+      fwrite( buff2, sizeof( *buff2 ), nb_samples2, fd2 );
+      fflush( fd2 );
+      fflush( fd1 );
+    }
+    
+    if (alg==1){
+      nb_samples = LMS_RecvStream( &rx_stream, buff1, buffer_size, &meta, 100 );
+      nb_samples2 = LMS_RecvStream( &rx_stream2, buff2, buffer_size, &meta, 100 );    
+      for (pointer=1;pointer<=buffer_size;pointer++){
+        mixbuf[pointer*2]   = buff2[pointer];
+        mixbuf[pointer*2-1] = buff1[pointer];
+      }
+      fwrite( mixbuf, sizeof( *mixbuf ), nb_samples+nb_samples2, fd );
+      fflush(fd);
+    }
+    
   }/////////////////// end main loop
   LMS_StopStream(&rx_stream);
   LMS_StopStream(&rx_stream2);
@@ -151,9 +182,12 @@ int main(int argc, char** argv){
   LMS_DestroyStream(device1, &rx_stream2);
   free( buff1 );
   free( buff2 );
-  printf("Files :\n %s\n %s\nwas writed and closed.\n",output_filename1,output_filename2);
   LMS_Close(device1);
-  fclose( fd1 );
-  fclose( fd2 );
+  if (alg==1) fclose( fd );
+  if (alg==0){
+    fclose( fd1 );
+    fclose( fd2 );
+    printf("Files :\n %s\n %s\nwas writed and closed.\n",output_filename1,output_filename2);
+  }
   return 0;
 }
