@@ -6,6 +6,15 @@
 #include <string.h>
 #include <lime/LimeSuite.h>
 
+const long int frq=100000;//100KHz
+const double base=.2;//100KHz
+
+
+const double   PI=3.14159265358979323846;
+const double   PI2=3.14159265358979323846*2;
+const double   PI_2=3.14159265358979323846/2;
+const long int c=299792458;//     (m/sec)
+
 int limesdr_set_channel( const unsigned int freq,
   const double bandwidth_calibrating,
   const double gain,
@@ -86,14 +95,14 @@ int main(int argc, char** argv){
   }	
   unsigned int freq = 2000000000;
   long long int maxnumber = 0;
-  double bandwidth_calibrating = 8e6;
+  double bandwidth_calibrating = 2500000;
   double host_sample_rate = 5.0;
   double sample_rate = 5000000;
   double gain = 30;
   unsigned int buffer_size = 1000*1000;
   unsigned int device_i = 0;
   unsigned int channel = 0; // anything  
-  char* antenna = "LNAW";
+  char* antenna = "LNAH";
   char* output_filename1 = "line-a.iq";  
   char* output_filename2 = "line-b.iq";  
   int nb_samples=0;
@@ -143,7 +152,23 @@ int main(int argc, char** argv){
   FILE* fd1;
   FILE* fd2;
   FILE* fd = stderr;
-  if (alg==0) {
+  
+  double defi;
+  double gamma;
+  double atg1;
+  double atg2;
+  
+  double deltaphi(short i1,short q1,short i2,short q2){
+    atg1=atan(i1/q1);
+    atg2=atan(i2/q2); 
+    if (atg1>atg2) {return (atg1-atg2);} else {return(PI2+atg1-atg2);} 
+  }
+  double azimut(long int frq, double deltaphase, double base){
+//    double dl=c*deltaphase/(frq*PI2); // time=deltaphase/(frq*PI2); dl=c*time
+    double azim=asin(c*deltaphase/(frq*PI2*base));  // azim=asin(dl/base);
+    return azim;
+  }
+  if (alg!=1) {
     fd1 = fopen( output_filename1, "w+b" );
     fd2 = fopen( output_filename2, "w+b" );
     if ( fd1 == NULL || fd2 == NULL ) perror("fopen()");
@@ -168,6 +193,23 @@ int main(int argc, char** argv){
       fwrite( mixbuf, sizeof( *mixbuf ), nb_samples+nb_samples2, fd );
       fflush(fd);
     }
+    if (alg==2){
+      nb_samples = LMS_RecvStream( &rx_stream, buff1, buffer_size, &meta, 100 );
+      nb_samples2 = LMS_RecvStream( &rx_stream2, buff2, buffer_size, &meta, 100 );
+      fwrite( buff1, sizeof( *buff1 ), nb_samples, fd1 );
+      fwrite( buff2, sizeof( *buff2 ), nb_samples2, fd2 );
+      fflush( fd2 );
+      fflush( fd1 );
+      for (pointer=1;pointer<=buffer_size;pointer++){
+        if (buff1[pointer].q!=0 && buff2[pointer].q!=0){ 
+          atg1=atan(buff1[pointer].i/buff1[pointer].q); 
+          atg2=atan(buff2[pointer].i/buff2[pointer].q); 
+        }
+        if (atg1>atg2) {defi=atg1-atg2;} else {defi=PI2+atg1-atg2;} 
+        gamma=asin(c*defi/(frq*PI2*base))*180/PI; //gamma=(PI_2-acos(c*defi/(frq*PI2*base)))*180/PI;  
+        printf("%f\n",gamma);      
+      }
+    }       
   }/////////////////// end main loop
   LMS_StopStream(&rx_stream);
   LMS_StopStream(&rx_stream2);
