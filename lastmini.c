@@ -117,8 +117,8 @@ int main(int argc, char** argv){
   double atg1;
   double atg2;
   double deltaphi(short i1,short q1,short i2,short q2){
-    atg1=atan(i1/q1);
-    atg2=atan(i2/q2);
+    atg1=atan2(i1,q1);
+    atg2=atan2(i2,q2);
     if (atg1>atg2) {return (atg1-atg2);} else {return(PI2+atg1-atg2);}
   }
   double azimut(long int frq, double deltaphase, double base){
@@ -160,12 +160,12 @@ int main(int argc, char** argv){
       fflush( fd1 );
       for (pointer=1;pointer<=buffer_size;pointer++){
         if (buff1[pointer].q!=0 && buff2[pointer].q!=0){
-          atg1=atan(buff1[pointer].i/buff1[pointer].q);
-          atg2=atan(buff2[pointer].i/buff2[pointer].q);
+          atg1=atan2(buff1[pointer].i,buff1[pointer].q);
+          atg2=atan2(buff2[pointer].i,buff2[pointer].q);
         }
         if (atg1>atg2) {defi=atg1-atg2;} else {defi=PI2+atg1-atg2;}
         gamma=asin(c*defi/(frq*PI2*base))*180/PI; //gamma=(PI_2-acos(c*defi/(frq*PI2*base)))*180/PI;
-        printf("%f\n",gamma);
+        printf("%3.3f\n",gamma);
       }
     }
   }/////////////////// end main loop
