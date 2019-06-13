@@ -1,4 +1,4 @@
-/*init 22.11.18*/
+/*init 19.06.12*/
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,6 +12,7 @@ const double   PI=3.14159265358979323846;
 const double   PI2=3.14159265358979323846*2;
 const double   PI_2=3.14159265358979323846/2;
 const long int c=299792458;//     (m/sec)
+
 /////////////////////////////////////////////////////////////////////
 int main(int argc, char** argv){
   if ( argc < 2 ) {
@@ -55,6 +56,7 @@ int main(int argc, char** argv){
     else if (strcmp(argv[i], "-o") == 0) { output_filename1 = argv[i+1]; }
     else if (strcmp(argv[i], "-p") == 0) { output_filename2 = argv[i+1]; }
     else if (strcmp(argv[i], "-n") == 0) { maxnumber = atof( argv[i+1] ); }
+    else if (strcmp(argv[i], "-d") == 0) { device_i = 1; }
     else if (strcmp(argv[i], "-m") == 0) { alg = atof( argv[i+1] ); }
   }
   lms_stream_meta_t meta;
@@ -154,18 +156,23 @@ int main(int argc, char** argv){
     if (alg==2){
       nb_samples = LMS_RecvStream( &rx_stream, buff1, buffer_size, &meta, 100 );
       nb_samples2 = LMS_RecvStream( &rx_stream2, buff2, buffer_size, &meta, 100 );
-      fwrite( buff1, sizeof( *buff1 ), nb_samples, fd1 );
-      fwrite( buff2, sizeof( *buff2 ), nb_samples2, fd2 );
-      fflush( fd2 );
-      fflush( fd1 );
+      if (maxnumber==1) {
+        fwrite( buff1, sizeof( *buff1 ), nb_samples, fd1 );
+        fwrite( buff2, sizeof( *buff2 ), nb_samples2, fd2 );
+        fflush( fd2 );
+        fflush( fd1 );
+      }
       for (pointer=1;pointer<=buffer_size;pointer++){
+
         if (buff1[pointer].q!=0 && buff2[pointer].q!=0){
           atg1=atan2(buff1[pointer].i,buff1[pointer].q);
           atg2=atan2(buff2[pointer].i,buff2[pointer].q);
         }
         if (atg1>atg2) {defi=atg1-atg2;} else {defi=PI2+atg1-atg2;}
-        gamma=asin(c*defi/(frq*PI2*base))*180/PI; //gamma=(PI_2-acos(c*defi/(frq*PI2*base)))*180/PI;
-        printf("%3.3f\n",gamma);
+
+//        gamma=asin(c*defi/(frq*PI2*base))*180/PI; //gamma=(PI_2-acos(c*defi/(frq*PI2*base)))*180/PI;
+//       for (int z=1;z<round(5+defi*15);z++) printf(" ");
+//        printf("*\n",defi*180/PI);
       }
     }
   }/////////////////// end main loop
